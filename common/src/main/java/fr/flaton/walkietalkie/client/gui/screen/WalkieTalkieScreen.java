@@ -148,6 +148,14 @@ public class WalkieTalkieScreen extends Screen {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
         drawCenteredText(context, this.textRenderer, this.title, this.width / 2, guiTop + 7, 4210752);
+
+        int fieldX = this.width / 2 - 20;
+        int fieldWidth = 60;
+        int titleX = fieldX + fieldWidth + 6;
+        int titleY = guiTop + 25;
+        Text freqLabel = Text.translatable("gui.walkietalkie.frequency.label");
+        drawCenteredText(context, this.textRenderer, freqLabel, titleX, titleY, 4210752);
+
     }
 
     @Override

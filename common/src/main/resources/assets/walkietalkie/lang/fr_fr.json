@@ -12,6 +12,7 @@
 
   "gui.walkietalkie.speaker.title": "Haut-parleur",
   "gui.walkietalkie.title": "Talkie-Walkie",
+  "gui.walkietalkie.frequency.label": "MHz",
 
   "advancement.walkietalkie.root.title": "Talkie-Walkie",
   "advancement.walkietalkie.root.description": "Découvrez la puissance de la communication grâce au talkie-walkie.",
