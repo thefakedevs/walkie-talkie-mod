@@ -89,7 +89,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
         return null;
     }
 
-    private static String pairKey(UUID sender, UUID receiver, int canal) {
+    private static String pairKey(UUID sender, UUID receiver, String canal) {
         return sender + ":" + receiver + ":" + canal;
     }
 
@@ -118,11 +118,18 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
             return;
         }
 
-        int senderCanal = getCanal(senderItemStack);
+        String senderChannel = getChannel(senderItemStack, senderPlayer);
         int senderRange = getRange(senderItemStack);
 
         if (api != null) {
-            SpeakerBlockEntity.getSpeakersActivatedInRange(senderCanal, senderPlayer.getWorld(), senderPlayer.getPos(), senderRange)
+            // Speakers don't support team channels yet in this logic properly unless we resolve it here.
+            // But wait, speakers are blocks, they don't have teams usually.
+            // If speaker has channel "walkietalkie.channel.team", what happens?
+            // SpeakerBlockEntity doesn't have a team.
+            // So speakers will only work on Manual frequency "walkietalkie.channel.team" literally if we don't resolve?
+            // Or we should resolve "walkietalkie.channel.team" to "team:null" for blocks?
+            // For now let's pass the resolved channel.
+            SpeakerBlockEntity.getSpeakersActivatedInRange(senderChannel, senderPlayer.getWorld(), senderPlayer.getPos(), senderRange)
                     .forEach(speakerBlockEntity -> speakerBlockEntity.playSound(api, event));
         }
 
@@ -163,8 +170,8 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
             if (receiverStack == null) {
                 continue;
             }
-            int receiverCanal = getCanal(receiverStack);
-            if (receiverCanal != senderCanal) {
+            String receiverChannel = getChannel(receiverStack, receiverPlayer);
+            if (!receiverChannel.equals(senderChannel)) {
                 continue;
             }
             if (!canBroadcastToReceiver(senderPlayer, receiverPlayer, senderRange)) {
@@ -177,7 +184,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
             if (distanceFactor > 1f) distanceFactor = 1f;
 
             // Канал per sender->receiver
-            String key = pairKey(senderPlayer.getUuid(), receiverPlayer.getUuid(), senderCanal);
+            String key = pairKey(senderPlayer.getUuid(), receiverPlayer.getUuid(), senderChannel);
             LocationalAudioChannel channel = radioChannels.get(key);
             if (channel == null) {
                 UUID channelId = UUID.nameUUIDFromBytes(("radio:" + key).getBytes(StandardCharsets.UTF_8));
@@ -237,8 +244,8 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
 
 
 
-    private int getCanal(ItemStack stack) {
-        return Objects.requireNonNull(stack.getNbt()).getInt(WalkieTalkieItem.NBT_KEY_CANAL);
+    private String getChannel(ItemStack stack, PlayerEntity player) {
+        return WalkieTalkieItem.getRadioChannel(stack).getNetworkKey(player);
     }
 
     private int getRange(ItemStack stack) {

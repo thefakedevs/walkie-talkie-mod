@@ -5,6 +5,7 @@ import fr.flaton.walkietalkie.Constants;
 import fr.flaton.walkietalkie.client.gui.widget.ToggleImageButton;
 import fr.flaton.walkietalkie.item.WalkieTalkieItem;
 import fr.flaton.walkietalkie.network.ModMessages;
+import fr.flaton.walkietalkie.channel.RadioChannel;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -14,6 +15,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.scoreboard.AbstractTeam;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -33,12 +36,17 @@ public class WalkieTalkieScreen extends Screen {
     private ToggleImageButton mute;
     private ToggleImageButton activate;
     private TextFieldWidget frequencyField;
-    private int pendingFrequency;
-    private int originalFrequency;
+    private String pendingChannel;
+    private String originalChannel;
+
+    // Last manual channel entered by user. Default to 100.0 if not set.
+    private String lastManualChannel = "100.0";
 
     private static final Identifier BG_TEXTURE = new Identifier(Constants.MOD_ID, "textures/gui/gui_walkietalkie.png");
     private static final Identifier MUTE_TEXTURE = new Identifier("voicechat", "textures/icons/microphone_button.png");
     private static final Identifier ACTIVATE_TEXTURE = new Identifier(Constants.MOD_ID, "textures/icons/activate.png");
+
+    private ButtonWidget modeButton;
 
     public WalkieTalkieScreen(ItemStack stack) {
         super(Text.translatable("gui.walkietalkie.title"));
@@ -55,11 +63,19 @@ public class WalkieTalkieScreen extends Screen {
         this.guiRight = (this.width + xSize) / 2;
         this.guiTop = (this.height - ySize) / 2;
 
+        originalChannel = WalkieTalkieItem.getChannel(stack);
+        pendingChannel = originalChannel;
+
+        // Initialize lastManualChannel if not in team mode
+        if (!RadioChannel.TEAM_CHANNEL_ID.equals(originalChannel)) {
+            lastManualChannel = originalChannel;
+        }
+
         activate = new ToggleImageButton(guiLeft + 6, guiTop + ySize - 26, ACTIVATE_TEXTURE, button -> {
             // Сохраняем частоту перед переключением activate
-            if (pendingFrequency != originalFrequency) {
-                sendUpdateFrequency(pendingFrequency);
-                originalFrequency = pendingFrequency;
+            if (!pendingChannel.equals(originalChannel)) {
+                sendUpdateChannel(pendingChannel);
+                originalChannel = pendingChannel;
             }
             sendUpdateWalkieTalkie(0, false);
         }, stack.getNbt().getBoolean(WalkieTalkieItem.NBT_KEY_ACTIVATE));
@@ -67,22 +83,28 @@ public class WalkieTalkieScreen extends Screen {
 
         mute = new ToggleImageButton(guiRight - 26, guiTop + ySize - 6 - 20, MUTE_TEXTURE, button -> {
             // Сохраняем частоту перед переключением mute
-            if (pendingFrequency != originalFrequency) {
-                sendUpdateFrequency(pendingFrequency);
-                originalFrequency = pendingFrequency;
+            if (!pendingChannel.equals(originalChannel)) {
+                sendUpdateChannel(pendingChannel);
+                originalChannel = pendingChannel;
             }
             sendUpdateWalkieTalkie(2, false);
         }, stack.getNbt().getBoolean(WalkieTalkieItem.NBT_KEY_MUTE));
         this.addDrawableChild(mute);
 
+        // Mode button
+        boolean isTeamMode = RadioChannel.TEAM_CHANNEL_ID.equals(pendingChannel);
+        modeButton = ButtonWidget.builder(getModeText(isTeamMode), button -> {
+            toggleMode();
+        }).dimensions(this.guiLeft + 19, guiTop + 22, 40, 16).build();
+        this.addDrawableChild(modeButton);
+
         // Frequency text field
-        originalFrequency = stack.getNbt().getInt(WalkieTalkieItem.NBT_KEY_CANAL);
-        pendingFrequency = originalFrequency;
-        
-        frequencyField = new TextFieldWidget(this.textRenderer, this.width / 2 - 30, guiTop + 22, 60, 16, Text.literal(""));
-        frequencyField.setMaxLength(6);
-        frequencyField.setText(String.format("%.1f", originalFrequency / 10.0));
+        frequencyField = new TextFieldWidget(this.textRenderer, this.width / 2 - 20, guiTop + 22, 60, 16, Text.literal(""));
+        frequencyField.setMaxLength(16);
+        frequencyField.setText(isTeamMode ? "" : pendingChannel);
         frequencyField.setChangedListener(this::onFrequencyChanged);
+        frequencyField.setVisible(!isTeamMode);
+
         this.addDrawableChild(frequencyField);
 
         // Confirm button
@@ -99,20 +121,12 @@ public class WalkieTalkieScreen extends Screen {
     }
 
     private void onFrequencyChanged(String text) {
-        try {
-            double frequency = Double.parseDouble(text.replace(',', '.'));
-            if (frequency >= 10.0 && frequency <= 1000.0) {
-                // Store pending frequency, don't send yet
-                pendingFrequency = (int) Math.round(frequency * 10.0);
-            }
-        } catch (NumberFormatException e) {
-            // Invalid input, ignore
-        }
+        pendingChannel = text;
     }
 
     private void applyFrequency() {
-        if (pendingFrequency != originalFrequency) {
-            sendUpdateFrequency(pendingFrequency);
+        if (!pendingChannel.equals(originalChannel)) {
+            sendUpdateChannel(pendingChannel);
         }
     }
 
@@ -130,10 +144,10 @@ public class WalkieTalkieScreen extends Screen {
         NetworkManager.sendToServer(ModMessages.UPDATE_WALKIETALKIE_C2S, buf);
     }
 
-    private void sendUpdateFrequency(int frequency) {
+    private void sendUpdateChannel(String channel) {
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-        buf.writeInt(3); // New index for frequency update
-        buf.writeInt(frequency);
+        buf.writeInt(4); // New index for channel update
+        buf.writeString(channel);
         NetworkManager.sendToServer(ModMessages.UPDATE_WALKIETALKIE_C2S, buf);
     }
 
@@ -151,11 +165,61 @@ public class WalkieTalkieScreen extends Screen {
 
         int fieldX = this.width / 2 - 20;
         int fieldWidth = 60;
-        int titleX = fieldX + fieldWidth + 6;
+        int titleX = fieldX + fieldWidth + 12;
         int titleY = guiTop + 25;
         Text freqLabel = Text.translatable("gui.walkietalkie.frequency.label");
-        drawCenteredText(context, this.textRenderer, freqLabel, titleX, titleY, 4210752);
+        // Only draw frequency label if field is visible
+        if (frequencyField.isVisible()) {
+             drawCenteredText(context, this.textRenderer, freqLabel, titleX, titleY, 4210752);
+        } else {
+             Text teamName = getTeamName();
+             int color = 4210752;
+             if (MinecraftClient.getInstance().player != null) {
+                 AbstractTeam team = MinecraftClient.getInstance().player.getScoreboardTeam();
+                 if (team != null && team.getColor().getColorValue() != null) {
+                     color = team.getColor().getColorValue();
+                 }
+             }
+             drawCenteredText(context, this.textRenderer, teamName, this.width / 2 + 10, titleY, color);
+        }
+    }
 
+    private Text getTeamName() {
+        if (MinecraftClient.getInstance().player != null) {
+            AbstractTeam team = MinecraftClient.getInstance().player.getScoreboardTeam();
+            if (team instanceof Team) {
+                return ((Team) team).getDisplayName();
+            }
+        }
+        return Text.translatable("gui.walkietalkie.team.none");
+    }
+
+    private void toggleMode() {
+        boolean isTeamMode = RadioChannel.TEAM_CHANNEL_ID.equals(pendingChannel);
+        if (isTeamMode) {
+            // Switch to manual
+            pendingChannel = lastManualChannel;
+            frequencyField.setText(lastManualChannel);
+            frequencyField.setVisible(true);
+            modeButton.setMessage(getModeText(false));
+
+            // If we are reverting to manual, we should probably update valid input immediately?
+            // frequencyField.setText already triggers listener? No, TextFieldWidget usually doesn't trigger listener on setText unless explicitly called or modifying internal.
+            // Let's ensure pendingChannel matches
+        } else {
+            // Switch to team
+            // Save current manual input
+            if (!pendingChannel.equals(RadioChannel.TEAM_CHANNEL_ID)) {
+                lastManualChannel = pendingChannel;
+            }
+            pendingChannel = RadioChannel.TEAM_CHANNEL_ID;
+            frequencyField.setVisible(false);
+            modeButton.setMessage(getModeText(true));
+        }
+    }
+
+    private Text getModeText(boolean isTeamMode) {
+        return isTeamMode ? Text.translatable("gui.walkietalkie.mode.team") : Text.translatable("gui.walkietalkie.mode.manual");
     }
 
     @Override
@@ -184,14 +248,13 @@ public class WalkieTalkieScreen extends Screen {
         
         // НЕ обновляем частоту если поле в фокусе (пользователь редактирует)
         if (frequencyField != null && !frequencyField.isFocused()) {
-            int freqInt = stack.getNbt().getInt(WalkieTalkieItem.NBT_KEY_CANAL);
-            String newFreqText = String.format("%.1f", freqInt / 10.0);
-            
+            String channel = WalkieTalkieItem.getChannel(stack);
+
             // Обновляем только если значение действительно изменилось
-            if (!frequencyField.getText().equals(newFreqText)) {
-                frequencyField.setText(newFreqText);
-                originalFrequency = freqInt;
-                pendingFrequency = freqInt;
+            if (!frequencyField.getText().equals(channel)) {
+                frequencyField.setText(channel);
+                originalChannel = channel;
+                pendingChannel = channel;
             }
         }
     }

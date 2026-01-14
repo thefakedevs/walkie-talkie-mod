@@ -135,6 +135,16 @@ public class SpeakerBlockEntity extends BlockEntity implements NamedScreenHandle
         return list;
     }
 
+    public static List<SpeakerBlockEntity> getSpeakersActivatedInRange(String canal, World world, Vec3d pos, int range) {
+        try {
+            double freq = Double.parseDouble(canal);
+            int canalInt = (int) Math.round(freq * 10.0);
+            return getSpeakersActivatedInRange(canalInt, world, pos, range);
+        } catch (NumberFormatException e) {
+            return new ArrayList<>();
+        }
+    }
+
     public void playSound(VoicechatServerApi api, MicrophonePacketEvent event) {
         Position pos = api.createPosition(this.getPos().getX(), this.getPos().getY(), this.getPos().getZ());
 

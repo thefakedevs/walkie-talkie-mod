@@ -12,6 +12,9 @@
   "gui.walkietalkie.speaker.title": "Акустическая колонка",
   "gui.walkietalkie.title": "Рация",
   "gui.walkietalkie.frequency.label": "МГц",
+  "gui.walkietalkie.mode.manual": "МГц",
+  "gui.walkietalkie.mode.team": "КОМАНДА",
+  "gui.walkietalkie.team.none": "Без команды",
 
   "advancement.walkietalkie.root.title": "Рация",
   "advancement.walkietalkie.root.description": "Откройте для себя всю мощь общения с помощью рации.",

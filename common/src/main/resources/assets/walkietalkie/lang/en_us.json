@@ -13,6 +13,9 @@
   "gui.walkietalkie.speaker.title": "Speaker",
   "gui.walkietalkie.title": "Walkie-Talkie",
   "gui.walkietalkie.frequency.label": "MHz",
+  "gui.walkietalkie.mode.manual": "MHZ",
+  "gui.walkietalkie.mode.team": "TEAM",
+  "gui.walkietalkie.team.none": "No Team",
 
   "advancement.walkietalkie.root.title": "Walkie Talkie",
   "advancement.walkietalkie.root.description": "Discover the power of communication with the walkie-talkie.",
