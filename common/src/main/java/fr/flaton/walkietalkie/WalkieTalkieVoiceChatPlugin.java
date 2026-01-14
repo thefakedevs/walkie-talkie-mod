@@ -12,10 +12,15 @@ import fr.flaton.walkietalkie.audio.MilitaryRadioEffect;
 import fr.flaton.walkietalkie.block.entity.SpeakerBlockEntity;
 import fr.flaton.walkietalkie.config.ModConfig;
 import fr.flaton.walkietalkie.item.WalkieTalkieItem;
+import fr.flaton.walkietalkie.network.ModMessages;
+import io.netty.buffer.Unpooled;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import dev.architectury.networking.NetworkManager;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -39,6 +44,8 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
     private static final Map<String, LocationalAudioChannel> radioChannels = new ConcurrentHashMap<>();
     private static final Map<String, MilitaryRadioEffect> radioEffects = new ConcurrentHashMap<>();
     private static final Map<String, OpusEncoder> radioEncoders = new ConcurrentHashMap<>();
+
+    private static final Map<String, Long> packetThrottleMap = new ConcurrentHashMap<>();
 
     @Override
     public String getPluginId() {
@@ -121,14 +128,12 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
         String senderChannel = getChannel(senderItemStack, senderPlayer);
         int senderRange = getRange(senderItemStack);
 
+        // Notify sender of transmission
+        if (shouldSendNotification(senderPlayer.getUuid(), senderChannel, true, senderPlayer.getUuid())) {
+            sendChannelActivity(senderPlayer, senderChannel, true, 100, senderPlayer.getUuid());
+        }
+
         if (api != null) {
-            // Speakers don't support team channels yet in this logic properly unless we resolve it here.
-            // But wait, speakers are blocks, they don't have teams usually.
-            // If speaker has channel "walkietalkie.channel.team", what happens?
-            // SpeakerBlockEntity doesn't have a team.
-            // So speakers will only work on Manual frequency "walkietalkie.channel.team" literally if we don't resolve?
-            // Or we should resolve "walkietalkie.channel.team" to "team:null" for blocks?
-            // For now let's pass the resolved channel.
             SpeakerBlockEntity.getSpeakersActivatedInRange(senderChannel, senderPlayer.getWorld(), senderPlayer.getPos(), senderRange)
                     .forEach(speakerBlockEntity -> speakerBlockEntity.playSound(api, event));
         }
@@ -174,6 +179,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
             if (!receiverChannel.equals(senderChannel)) {
                 continue;
             }
+
             if (!canBroadcastToReceiver(senderPlayer, receiverPlayer, senderRange)) {
                 continue;
             }
@@ -182,6 +188,12 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
             float distanceFactor = senderRange > 0 ? (p2pDistance / (float) senderRange) : 1f;
             if (distanceFactor < 0f) distanceFactor = 0f;
             if (distanceFactor > 1f) distanceFactor = 1f;
+
+            // Notify receiver of reception
+            if (shouldSendNotification(receiverPlayer.getUuid(), receiverChannel, false, senderPlayer.getUuid())) {
+                int quality = (int) ((1.0 - distanceFactor) * 100);
+                sendChannelActivity(receiverPlayer, receiverChannel, false, quality, senderPlayer.getUuid());
+            }
 
             // Канал per sender->receiver
             String key = pairKey(senderPlayer.getUuid(), receiverPlayer.getUuid(), senderChannel);
@@ -243,6 +255,28 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
     }
 
 
+
+    private boolean shouldSendNotification(UUID targetPlayer, String channel, boolean transmitting, UUID sourcePlayer) {
+        String key = targetPlayer.toString() + ":" + channel + ":" + transmitting + ":" + sourcePlayer;
+        long now = System.currentTimeMillis();
+        long last = packetThrottleMap.getOrDefault(key, 0L);
+        if (now - last > 200) {
+            packetThrottleMap.put(key, now);
+            return true;
+        }
+        return false;
+    }
+
+    private void sendChannelActivity(PlayerEntity player, String channel, boolean transmitting, int quality, UUID source) {
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+            buf.writeString(channel);
+            buf.writeBoolean(transmitting);
+            buf.writeInt(quality);
+            buf.writeUuid(source);
+            NetworkManager.sendToPlayer(serverPlayer, ModMessages.CHANNEL_ACTIVITY_S2C, buf);
+        }
+    }
 
     private String getChannel(ItemStack stack, PlayerEntity player) {
         return WalkieTalkieItem.getRadioChannel(stack).getNetworkKey(player);

@@ -4,6 +4,7 @@ import dev.architectury.networking.NetworkManager;
 import fr.flaton.walkietalkie.Constants;
 import fr.flaton.walkietalkie.network.packet.c2s.*;
 import fr.flaton.walkietalkie.network.packet.s2c.UpdateWalkieTalkieS2CPacket;
+import fr.flaton.walkietalkie.network.packet.s2c.ChannelActivityS2CPacket;
 import net.minecraft.util.Identifier;
 
 public class ModMessages {
@@ -13,6 +14,8 @@ public class ModMessages {
     public static final Identifier UPDATE_SPEAKER_C2S = new Identifier(Constants.MOD_ID, "updatespeaker_c2s");
 
     public static final Identifier ACTIVATE_KEY_PRESSED_C2S = new Identifier(Constants.MOD_ID, "activatekeypressed_c2s");
+
+    public static final Identifier CHANNEL_ACTIVITY_S2C = new Identifier(Constants.MOD_ID, "channelactivity_s2c");
 
     public static void registerC2SPackets() {
 
@@ -24,6 +27,7 @@ public class ModMessages {
 
     public static void registerS2CPackets() {
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, UPDATE_WALKIETALKIE_S2C, UpdateWalkieTalkieS2CPacket::receive);
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, CHANNEL_ACTIVITY_S2C, ChannelActivityS2CPacket::receive);
     }
 
 }
