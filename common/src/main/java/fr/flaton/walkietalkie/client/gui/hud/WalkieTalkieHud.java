@@ -37,7 +37,8 @@ public class WalkieTalkieHud {
         List<ItemStack> walkieTalkies = new ArrayList<>();
 
         // Scan inventory
-        for (ItemStack stack : player.getInventory().main) {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = player.getInventory().main.get(i);
             if (stack.getItem() instanceof WalkieTalkieItem) {
                 if (stack.getOrCreateNbt().getBoolean(WalkieTalkieItem.NBT_KEY_ACTIVATE)) {
                     walkieTalkies.add(stack);
@@ -123,7 +124,7 @@ public class WalkieTalkieHud {
         }
 
         // Indication if held (Ready)
-        if (isHeld && !isTransmitting) {
+        if (isHeld && !isTransmitting && !isReceiving) {
              // Show ready icon/text
              statusSymbol = "Rdy";
              if (!isMuted) color = 0xFFFFFF55; // Yellow?
