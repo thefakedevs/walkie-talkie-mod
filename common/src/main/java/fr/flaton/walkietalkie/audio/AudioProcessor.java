@@ -10,6 +10,8 @@ import java.util.function.Consumer;
  */
 public class AudioProcessor {
 
+    private static final float EFFECT_GAIN = 0.7f;
+
     private final MilitaryRadioEffect radioEffect;
     private Consumer<Float> onTransmissionStart;
     private Consumer<Float> onTransmissionEnd;
@@ -53,9 +55,10 @@ public class AudioProcessor {
             
             // Apply military radio effect with distance
             short[] processed = radioEffect.process(pcmData, distance);
+            short[] blended = blendWithOriginal(pcmData, processed, EFFECT_GAIN);
             
             // Encode back to opus
-            byte[] encodedData = encoder.encode(processed);
+            byte[] encodedData = encoder.encode(blended);
             
             return encodedData != null ? encodedData : opusData;
             
@@ -76,5 +79,22 @@ public class AudioProcessor {
      */
     public void reset() {
         radioEffect.reset();
+    }
+
+    /**
+     * Blend original and effected audio data
+     */
+
+    private short[] blendWithOriginal(short[] original, short[] effected, float effectGain) {
+        short[] result = new short[Math.min(original.length, effected.length)];
+        float originalGain =1f - effectGain;
+
+        for (int i =0; i < result.length; i++) {
+            float mixed = (original[i] /32768f) * originalGain + (effected[i] /32768f) * effectGain;
+            mixed = Math.max(-0.95f, Math.min(0.95f, mixed));
+            result[i] = (short) (mixed *32768f);
+        }
+
+        return result;
     }
 }
