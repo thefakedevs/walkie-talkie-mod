@@ -8,10 +8,13 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.*;
 
 public class WalkieTalkieHud {
+
+    private static final Identifier RADIO_TEXTURE = new Identifier("walkietalkie", "textures/icons/radio.png");
 
     private record SignalState(UUID id, long expiry, int quality) {}
 
@@ -59,7 +62,7 @@ public class WalkieTalkieHud {
 
         for (ItemStack stack : walkieTalkies) {
             renderWalkieTalkieInfo(context, client, player, stack, x, y);
-            y += 15;
+            y += 20;
         }
     }
 
@@ -99,45 +102,42 @@ public class WalkieTalkieHud {
 
         // Determine Icon Indication
         // Status:
-        // - Muted (Red)
-        // - Transmitting (Red + Active) if Held
+        // - Transmitting (Red + Active)
         // - Receiving (Green + Active)
-        // - Listening (Gray) if !Muted
+        // - Muted (Red)
+        // - Ready (Yellow) if Held
+        // - Listening (Gray)
 
-        int color = 0xFFCCCCCC; // Gray
-        String statusSymbol = "Unknown";
+        int color;
+        String statusSymbol;
 
-        if (isMuted) {
-            color = 0xFFFF5555; // Red
-            statusSymbol = "M"; // Fallback
+        if (isTransmitting) {
+             color = 0xFFFF5555; // Red
+             statusSymbol = "TX " + range + "m"; // Transmission
+        } else if (isReceiving) {
+             color = 0xFF55FF55; // Green
+             statusSymbol = "RX " + maxQuality + "%"; // Reception
+        } else if (isMuted) {
+             color = 0xFFFF5555; // Red
+             statusSymbol = "M"; // Muted
+        } else if (isHeld) {
+             color = 0xFFFFFF55; // Yellow
+             statusSymbol = "Rdy"; // Ready
         } else {
-             if (isTransmitting) {
-                 color = 0xFFFF5555; // Red
-                 statusSymbol = "TX " + range + "m"; // Transmission
-             } else if (isReceiving) {
-                 color = 0xFF55FF55; // Green
-                 statusSymbol = "RX " + maxQuality + "%"; // Reception
-             } else {
-                 color = 0xFFAAAAAA; // Gray/Idle
-                 statusSymbol = "L"; // Listening
-             }
-        }
-
-        // Indication if held (Ready)
-        if (isHeld && !isTransmitting && !isReceiving) {
-             // Show ready icon/text
-             statusSymbol = "Rdy";
-             if (!isMuted) color = 0xFFFFFF55; // Yellow?
+             color = 0xFFAAAAAA; // Gray/Idle
+             statusSymbol = "L"; // Listening
         }
 
         // Draw
-        // [Status] ChannelName
+        // [Icon] [Status] ChannelName
+
+        context.drawTexture(RADIO_TEXTURE, x, y, 0, 0, 16, 16, 16, 16);
 
         // Draw status symbol
-        context.drawText(client.textRenderer, statusSymbol, x, y + 1, color | 0xFF000000, true);
+        context.drawText(client.textRenderer, statusSymbol, x + 20, y + 4, color | 0xFF000000, true);
 
         // Draw text
-        context.drawText(client.textRenderer, displayText, x + 48, y + 1, 0xFFFFFFFF, true);
+        context.drawText(client.textRenderer, displayText, x + 20 + 48, y + 4, 0xFFFFFFFF, true);
 
         //Sort speakers alphabetically
         Collections.sort(speakers);
@@ -156,7 +156,7 @@ public class WalkieTalkieHud {
              speakerText.append(")");
 
              int offset = client.textRenderer.getWidth(displayText);
-             context.drawText(client.textRenderer, speakerText.toString(), x + 48 + offset + 4, y + 1, 0xFFAAAAAA, true);
+             context.drawText(client.textRenderer, speakerText.toString(), x + 20 + 48 + offset + 4, y + 4, 0xFFAAAAAA, true);
         }
     }
 }

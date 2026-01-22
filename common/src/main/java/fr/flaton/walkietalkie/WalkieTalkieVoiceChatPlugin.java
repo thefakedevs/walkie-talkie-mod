@@ -36,7 +36,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
 
     @Nullable
     public static VoicechatServerApi api;
-    
+
     // Audio processors per channel (UUID = channel ID)
     private static final Map<UUID, AudioProcessor> audioProcessors = new ConcurrentHashMap<>();
 
@@ -350,3 +350,4 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
         }
     }
 }
+
