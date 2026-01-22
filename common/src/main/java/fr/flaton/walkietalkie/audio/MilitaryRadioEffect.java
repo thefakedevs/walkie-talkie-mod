@@ -196,7 +196,7 @@ public class MilitaryRadioEffect {
         sample = applyBandpass(sample, cutoffLow, cutoffHigh);
         
         // 2. Жесткий distortion
-        float drive = 8f + distance * 8f; // 8dB -> 16dB
+        float drive = 8f + distance * 4f; // 8dB -> 16dB
         sample = applyDistortion(sample, drive);
         
         // 3. Компрессия с жёстким порогом (усреднённая огибающая уже сглаживает уровень)
@@ -253,7 +253,7 @@ public class MilitaryRadioEffect {
         // Жесткий distortion
         sample = (float)Math.tanh(sample * 1.2);
         
-        return sample * 0.85f; // Компенсация громкости
+        return sample * 0.90f; // Компенсация громкости
     }
     
     private float applyCompressor(float sample, float ratio) {
