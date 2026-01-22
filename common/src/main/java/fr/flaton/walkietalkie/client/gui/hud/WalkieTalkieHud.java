@@ -139,6 +139,9 @@ public class WalkieTalkieHud {
         // Draw text
         context.drawText(client.textRenderer, displayText, x + 48, y + 1, 0xFFFFFFFF, true);
 
+        //Sort speakers alphabetically
+        Collections.sort(speakers);
+
         if (isReceiving && !speakers.isEmpty()) {
              StringBuilder speakerText = new StringBuilder();
              speakerText.append(" (");
