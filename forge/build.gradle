@@ -8,6 +8,15 @@ architectury {
     forge()
 }
 
+tasks.named('runClient', JavaExec).configure {
+    doFirst {
+        def envUsername = System.getenv("MC_USERNAME")
+        if (envUsername && !args.contains("--username")) {
+            args += ["--username", envUsername]
+        }
+    }
+}
+
 configurations {
     common
     shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
