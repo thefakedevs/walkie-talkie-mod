@@ -1,6 +1,7 @@
 package fr.flaton.walkietalkie;
 
 import de.maxhenkel.voicechat.api.*;
+import de.maxhenkel.voicechat.api.audiochannel.EntityAudioChannel;
 import de.maxhenkel.voicechat.api.audiochannel.LocationalAudioChannel;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
@@ -41,7 +42,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
     private static final Map<UUID, AudioProcessor> audioProcessors = new ConcurrentHashMap<>();
 
     // Per sender->receiver stream channels and effects
-    private static final Map<String, LocationalAudioChannel> radioChannels = new ConcurrentHashMap<>();
+    private static final Map<String, EntityAudioChannel> radioChannels = new ConcurrentHashMap<>();
     private static final Map<String, MilitaryRadioEffect> radioEffects = new ConcurrentHashMap<>();
     private static final Map<String, OpusEncoder> radioEncoders = new ConcurrentHashMap<>();
 
@@ -197,11 +198,14 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
 
             // Канал per sender->receiver
             String key = pairKey(senderPlayer.getUuid(), receiverPlayer.getUuid(), senderChannel);
-            LocationalAudioChannel channel = radioChannels.get(key);
+            EntityAudioChannel channel = radioChannels.get(key);
+            Entity senderEntity = api.fromEntity(senderPlayer);
+            if (senderEntity == null) {
+                continue;
+            }
             if (channel == null) {
                 UUID channelId = UUID.nameUUIDFromBytes(("radio:" + key).getBytes(StandardCharsets.UTF_8));
-                Position pos = api.createPosition(senderPlayer.getX(), senderPlayer.getY(), senderPlayer.getZ());
-                channel = api.createLocationalAudioChannel(channelId, api.fromServerLevel(senderPlayer.getWorld()), pos);
+                channel = api.createEntityAudioChannel(channelId, senderEntity);
                 if (channel == null) {
                     continue;
                 }
@@ -210,6 +214,8 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
                 final UUID onlyReceiver = receiverPlayer.getUuid();
                 channel.setFilter(serverPlayer -> serverPlayer.getUuid().equals(onlyReceiver));
                 radioChannels.put(key, channel);
+            } else {
+                channel.updateEntity(senderEntity);
             }
 
             // Эффект per pair для непрерывности между кадрами
