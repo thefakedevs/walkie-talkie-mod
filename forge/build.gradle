@@ -66,6 +66,7 @@ dependencies {
 shadowJar {
     exclude "fabric.mod.json"
     exclude "org/slf4j/**"
+    exclude "org/apache/commons/io/**"
 
     configurations = [project.configurations.shadowCommon]
     relocate "com.sedmelluq.discord.lavaplayer", "fr.flaton.walkietalkie.shadow.lavaplayer"
