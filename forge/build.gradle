@@ -66,11 +66,20 @@ dependencies {
 shadowJar {
     exclude "fabric.mod.json"
     exclude "org/slf4j/**"
-    exclude "org/apache/commons/io/**"
 
     configurations = [project.configurations.shadowCommon]
     relocate "com.sedmelluq.discord.lavaplayer", "fr.flaton.walkietalkie.shadow.lavaplayer"
     relocate "dev.lavalink.youtube", "fr.flaton.walkietalkie.shadow.youtube"
+    relocate "com.fasterxml.jackson", "fr.flaton.walkietalkie.shadow.jackson"
+    relocate "com.grack.nanojson", "fr.flaton.walkietalkie.shadow.nanojson"
+    relocate "commons-io", "fr.flaton.walkietalkie.shadow.commonsio"
+    relocate "org.apache.commons.io", "fr.flaton.walkietalkie.shadow.commonsio"
+    relocate "org.apache.commons.logging", "fr.flaton.walkietalkie.shadow.commonslogging"
+    relocate "org.apache.http", "fr.flaton.walkietalkie.shadow.apache.http"
+    relocate "org.jsoup", "fr.flaton.walkietalkie.shadow.jsoup"
+    relocate "org.json", "fr.flaton.walkietalkie.shadow.orgjson"
+    relocate "org.mozilla", "fr.flaton.walkietalkie.shadow.mozilla"
+    relocate "net.iharder", "fr.flaton.walkietalkie.shadow.base64"
     archiveClassifier.set("dev-shadow")
 }
 
