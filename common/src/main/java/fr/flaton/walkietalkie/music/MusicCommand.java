@@ -9,6 +9,8 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 
+import java.util.List;
+
 public final class MusicCommand {
 
     private MusicCommand() {
@@ -33,6 +35,10 @@ public final class MusicCommand {
                                     context.getSource(),
                                     StringArgumentType.getString(context, "frequency")
                             ))));
+
+            dispatcher.register(CommandManager.literal("listmusic")
+                    .requires(source -> source.hasPermissionLevel(ModConfig.musicPermissionLevel))
+                    .executes(context -> list(context.getSource())));
         });
     }
 
@@ -72,6 +78,24 @@ public final class MusicCommand {
         return 1;
     }
 
+    private static int list(ServerCommandSource source) {
+        List<MusicSessionInfo> sessions = MusicManager.getInstance().listSessions();
+        if (sessions.isEmpty()) {
+            source.sendFeedback(() -> Text.literal("No music streams are currently playing."), false);
+            return 0;
+        }
+
+        source.sendFeedback(() -> Text.literal("Playing music streams: " + sessions.size()), false);
+        for (MusicSessionInfo session : sessions) {
+            source.sendFeedback(() -> Text.literal("- " + session.frequency()
+                    + " | " + session.sourceType()
+                    + " | " + session.trackTitle()
+                    + " | " + formatPosition(session)
+                    + " | " + session.source()), false);
+        }
+        return sessions.size();
+    }
+
     private static int stop(ServerCommandSource source, String frequency) {
         String networkKey = resolveFrequencyKey(source, frequency);
         boolean stopped;
@@ -98,5 +122,23 @@ public final class MusicCommand {
             return "team:noteam";
         }
         return RadioChannel.from(frequency).getNetworkKey(null);
+    }
+
+    private static String formatPosition(MusicSessionInfo session) {
+        if (session.stream() || session.lengthMillis() <= 0L) {
+            return formatDuration(session.positionMillis()) + " / live";
+        }
+        return formatDuration(session.positionMillis()) + " / " + formatDuration(session.lengthMillis());
+    }
+
+    private static String formatDuration(long millis) {
+        long totalSeconds = Math.max(0L, millis / 1000L);
+        long seconds = totalSeconds % 60L;
+        long minutes = (totalSeconds / 60L) % 60L;
+        long hours = totalSeconds / 3600L;
+        if (hours > 0L) {
+            return String.format("%d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format("%d:%02d", minutes, seconds);
     }
 }

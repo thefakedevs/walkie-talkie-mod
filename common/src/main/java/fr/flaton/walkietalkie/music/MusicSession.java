@@ -26,6 +26,8 @@ public final class MusicSession {
     private final MinecraftServer server;
     private final MusicManager manager;
     private final String frequencyKey;
+    private final String source;
+    private final String sourceType;
     private final AudioPlayer audioPlayer;
     private final AudioTrack track;
     private final VoiceChatMusicSink sink;
@@ -34,10 +36,12 @@ public final class MusicSession {
     private Thread workerThread;
     private OpusEncoder encoder;
 
-    public MusicSession(MinecraftServer server, RegistryKey<World> originWorld, MusicManager manager, AudioPlayerManager playerManager, String frequencyKey, AudioTrack track) {
+    public MusicSession(MinecraftServer server, RegistryKey<World> originWorld, MusicManager manager, AudioPlayerManager playerManager, String frequencyKey, String source, String sourceType, AudioTrack track) {
         this.server = server;
         this.manager = manager;
         this.frequencyKey = frequencyKey;
+        this.source = source;
+        this.sourceType = sourceType;
         this.track = track;
         this.audioPlayer = playerManager.createPlayer();
         this.audioPlayer.setVolume(Math.max(0, Math.min(200, ModConfig.musicDefaultVolume)));
@@ -61,6 +65,20 @@ public final class MusicSession {
         workerThread.setDaemon(true);
         workerThread.start();
         LOGGER.info("Music playback worker started: frequency={}, track='{}', thread={}", frequencyKey, track.getInfo().title, workerThread.getName());
+    }
+
+    public MusicSessionInfo getInfo() {
+        AudioTrack playingTrack = audioPlayer.getPlayingTrack();
+        long positionMillis = playingTrack == null ? track.getPosition() : playingTrack.getPosition();
+        return new MusicSessionInfo(
+                frequencyKey,
+                source,
+                sourceType,
+                track.getInfo().title,
+                track.getInfo().isStream,
+                positionMillis,
+                track.getInfo().length
+        );
     }
 
     public void stop() {

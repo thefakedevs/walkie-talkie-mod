@@ -24,6 +24,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -98,7 +100,7 @@ public final class MusicManager {
                 }
                 LOGGER.info("Lavaplayer loaded track for frequency {}: title='{}', author='{}', lengthMs={}, stream={}",
                         frequencyKey, track.getInfo().title, track.getInfo().author, track.getInfo().length, track.getInfo().isStream);
-                startLoadedTrack(server, originWorld, frequencyKey, track, sourceType, callback);
+                startLoadedTrack(server, originWorld, frequencyKey, identifier, track, sourceType, callback);
             }
 
             @Override
@@ -117,7 +119,7 @@ public final class MusicManager {
                 }
                 LOGGER.info("Lavaplayer loaded playlist for frequency {}: name='{}', tracks={}, selected='{}'",
                         frequencyKey, playlist.getName(), playlist.getTracks().size(), selectedTrack.getInfo().title);
-                startLoadedTrack(server, originWorld, frequencyKey, selectedTrack, sourceType, callback);
+                startLoadedTrack(server, originWorld, frequencyKey, identifier, selectedTrack, sourceType, callback);
             }
 
             @Override
@@ -237,11 +239,18 @@ public final class MusicManager {
         sessions.clear();
     }
 
+    public List<MusicSessionInfo> listSessions() {
+        return sessions.values().stream()
+                .map(MusicSession::getInfo)
+                .sorted(Comparator.comparing(MusicSessionInfo::frequency))
+                .toList();
+    }
+
     void removeSession(String frequencyKey, MusicSession session) {
         sessions.remove(frequencyKey, session);
     }
 
-    private void startLoadedTrack(MinecraftServer server, RegistryKey<World> originWorld, String frequencyKey, AudioTrack track, String sourceType, Consumer<MusicStartResult> callback) {
+    private void startLoadedTrack(MinecraftServer server, RegistryKey<World> originWorld, String frequencyKey, String source, AudioTrack track, String sourceType, Consumer<MusicStartResult> callback) {
         long maxDurationMillis = ModConfig.musicMaxTrackDurationSeconds <= 0 ? 0L : ModConfig.musicMaxTrackDurationSeconds * 1000L;
         if (track.getInfo().isStream) {
             LOGGER.info("Starting stream music source for frequency {}; duration limit is not applied to livestreams/streams", frequencyKey);
@@ -253,7 +262,7 @@ public final class MusicManager {
         }
 
         stop(frequencyKey);
-        MusicSession session = new MusicSession(server, originWorld, this, playerManager, frequencyKey, track);
+        MusicSession session = new MusicSession(server, originWorld, this, playerManager, frequencyKey, source, sourceType, track);
         sessions.put(frequencyKey, session);
         try {
             LOGGER.info("Starting music session for frequency {} with track '{}'", frequencyKey, track.getInfo().title);
