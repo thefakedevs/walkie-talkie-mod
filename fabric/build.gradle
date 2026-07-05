@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "com.matthewprenger.cursegradle" version "1.4.0"
     id "com.modrinth.minotaur" version "2.+"
 }
@@ -24,6 +24,15 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+    shadowCommon "dev.arbjerg:lavaplayer:2.2.7"
+    shadowCommon "dev.lavalink.youtube:v2:1.18.1"
+    shadowCommon "dev.lavalink.youtube:common:1.18.1"
+    shadowCommon "com.grack:nanojson:1.7"
+    shadowCommon "org.mozilla:rhino-engine:1.7.15"
+    shadowCommon "org.mozilla:rhino:1.7.15"
+    implementation "dev.arbjerg:lavaplayer:2.2.7"
+    implementation "dev.lavalink.youtube:v2:1.18.1"
+    implementation "dev.lavalink.youtube:common:1.18.1"
 
     // SimpleVoiceChat dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -32,6 +41,8 @@ dependencies {
 
 shadowJar {
     configurations = [project.configurations.shadowCommon]
+    relocate "com.sedmelluq.discord.lavaplayer", "fr.flaton.walkietalkie.shadow.lavaplayer"
+    relocate "dev.lavalink.youtube", "fr.flaton.walkietalkie.shadow.youtube"
     archiveClassifier.set("dev-shadow")
 }
 

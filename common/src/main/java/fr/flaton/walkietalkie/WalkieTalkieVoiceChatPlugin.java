@@ -6,6 +6,7 @@ import de.maxhenkel.voicechat.api.audiochannel.LocationalAudioChannel;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
+import de.maxhenkel.voicechat.api.events.VoicechatServerStoppedEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
 import de.maxhenkel.voicechat.api.opus.OpusEncoder;
 import fr.flaton.walkietalkie.audio.AudioProcessor;
@@ -13,6 +14,7 @@ import fr.flaton.walkietalkie.audio.MilitaryRadioEffect;
 import fr.flaton.walkietalkie.block.entity.SpeakerBlockEntity;
 import fr.flaton.walkietalkie.config.ModConfig;
 import fr.flaton.walkietalkie.item.WalkieTalkieItem;
+import fr.flaton.walkietalkie.music.MusicLifecycle;
 import fr.flaton.walkietalkie.network.ModMessages;
 import io.netty.buffer.Unpooled;
 import net.minecraft.entity.player.PlayerEntity;
@@ -57,6 +59,7 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(MicrophonePacketEvent.class, this::onMicPacket);
         registration.registerEvent(VoicechatServerStartedEvent.class, this::onServerStarted);
+        registration.registerEvent(VoicechatServerStoppedEvent.class, this::onServerStopped);
     }
 
     private void onServerStarted(VoicechatServerStartedEvent event) {
@@ -69,6 +72,11 @@ public class WalkieTalkieVoiceChatPlugin implements VoicechatPlugin {
                 .setIcon(getIcon("assets/walkietalkie/textures/block/speaker.png"))
                 .build();
         api.registerVolumeCategory(speakers);
+    }
+
+    private void onServerStopped(VoicechatServerStoppedEvent event) {
+        MusicLifecycle.stopAllSafely();
+        api = null;
     }
 
     private int[][] getIcon(String path) {

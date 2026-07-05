@@ -34,7 +34,7 @@ public class SpeakerBlockEntity extends BlockEntity implements NamedScreenHandle
     protected final PropertyDelegate propertyDelegate;
 
     boolean activated;
-    int canal = 1;
+    int canal = 1000;
 
     private final UUID channelId;
     private LocationalAudioChannel channel = null;
@@ -145,6 +145,34 @@ public class SpeakerBlockEntity extends BlockEntity implements NamedScreenHandle
         }
     }
 
+    public static List<SpeakerBlockEntity> getSpeakersActivated(String canal, World world) {
+        try {
+            double freq = Double.parseDouble(canal);
+            int canalInt = (int) Math.round(freq * 10.0);
+            return getSpeakersActivated(canalInt, world);
+        } catch (NumberFormatException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public static List<SpeakerBlockEntity> getSpeakersActivated(int canal, World world) {
+        speakerBlockEntities.removeIf(BlockEntity::isRemoved);
+
+        List<SpeakerBlockEntity> list = new ArrayList<>();
+        for (SpeakerBlockEntity speaker : speakerBlockEntities) {
+            if (!speaker.hasWorld() || speaker.getWorld() == null) {
+                continue;
+            }
+            if (!ModConfig.crossDimensionsEnabled && !speaker.getWorld().getRegistryKey().equals(world.getRegistryKey())) {
+                continue;
+            }
+            if (speaker.activated && speaker.canal == canal) {
+                list.add(speaker);
+            }
+        }
+        return list;
+    }
+
     public void playSound(VoicechatServerApi api, MicrophonePacketEvent event) {
         Position pos = api.createPosition(this.getPos().getX(), this.getPos().getY(), this.getPos().getZ());
 
@@ -166,6 +194,29 @@ public class SpeakerBlockEntity extends BlockEntity implements NamedScreenHandle
             event.getPacket().getOpusEncodedData()
         );
         this.channel.send(processedAudio);
+    }
+
+    public boolean prepareMusicChannel(VoicechatServerApi api) {
+        if (this.world == null) {
+            return false;
+        }
+
+        Position pos = api.createPosition(this.getPos().getX(), this.getPos().getY(), this.getPos().getZ());
+        if (this.channel == null) {
+            this.channel = api.createLocationalAudioChannel(this.channelId, api.fromServerLevel(this.world), pos);
+            if (this.channel == null) {
+                return false;
+            }
+            this.channel.setCategory(WalkieTalkieVoiceChatPlugin.SPEAKER_CATEGORY);
+            this.channel.setDistance(ModConfig.speakerDistance + 1F);
+        }
+        return true;
+    }
+
+    public void playMusicFrame(byte[] opusFrame) {
+        if (this.channel != null && !this.channel.isClosed()) {
+            this.channel.send(opusFrame);
+        }
     }
     
     @Override

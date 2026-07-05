@@ -16,6 +16,8 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.Locale;
+
 public class SpeakerScreen extends HandledScreen<SpeakerScreenHandler> {
     private static final Identifier TEXTURE = new Identifier(Constants.MOD_ID, "textures/gui/gui_walkietalkie.png");
     private static final Identifier ACTIVATE_TEXTURE = new Identifier(Constants.MOD_ID, "textures/icons/activate.png");
@@ -42,6 +44,7 @@ public class SpeakerScreen extends HandledScreen<SpeakerScreenHandler> {
         drawCenteredText(context, this.textRenderer, title.getString(), this.width / 2, guiTop + 7, 4210752);
 
         updateActivateState();
+        updateFrequencyField();
     }
 
     @Override
@@ -100,7 +103,7 @@ public class SpeakerScreen extends HandledScreen<SpeakerScreenHandler> {
         
         frequencyField = new TextFieldWidget(this.textRenderer, this.width / 2 - 30, guiTop + 22, 60, 16, Text.literal(""));
         frequencyField.setMaxLength(6);
-        frequencyField.setText(String.format("%.1f", originalFrequency / 10.0));
+        frequencyField.setText(formatFrequency(originalFrequency));
         frequencyField.setChangedListener(this::onFrequencyChanged);
         this.addDrawableChild(frequencyField);
 
@@ -132,6 +135,23 @@ public class SpeakerScreen extends HandledScreen<SpeakerScreenHandler> {
         if (pendingFrequency != originalFrequency) {
             sendUpdateFrequency(pendingFrequency);
         }
+    }
+
+    private void updateFrequencyField() {
+        if (frequencyField == null || frequencyField.isFocused()) {
+            return;
+        }
+
+        int canal = handler.getCanal();
+        if (canal != originalFrequency) {
+            originalFrequency = canal;
+            pendingFrequency = canal;
+            frequencyField.setText(formatFrequency(canal));
+        }
+    }
+
+    private String formatFrequency(int frequency) {
+        return String.format(Locale.ROOT, "%.1f", frequency / 10.0);
     }
 
     @Override

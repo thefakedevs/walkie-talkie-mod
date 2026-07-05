@@ -25,6 +25,21 @@ public class ModConfig {
     public static boolean crossDimensionsEnabled = false;
     public static boolean applyDimensionScale = true;
     public static boolean lowQualityAudio = true;
+    public static boolean musicEnabled = true;
+    public static int musicPermissionLevel = 2;
+    public static int musicMaxConcurrentFrequencies = 4;
+    public static boolean musicAllowYoutube = true;
+    public static boolean musicAllowDirectUrls = true;
+    public static boolean musicAllowLocalFiles = false;
+    public static int musicDefaultVolume = 100;
+    public static int musicRefreshReceiversIntervalTicks = 20;
+    public static boolean musicBlockPrivateNetworkUrls = true;
+    public static int musicMaxTrackDurationSeconds = 0;
+    public static int musicLoadTimeoutSeconds = 90;
+    public static int musicFrameBufferDurationMillis = 3000;
+    public static int musicTrackStuckThresholdSeconds = 60;
+    public static String musicYoutubeOauthRefreshToken = "";
+    public static boolean musicYoutubeOauthSkipInitialization = true;
 
     public ModConfig(Path ConfigFolder) {
         this.CONFIG_FILE = new File(ConfigFolder.toString(), "WalkieTalkie.properties");
@@ -52,6 +67,21 @@ public class ModConfig {
                 crossDimensionsEnabled = Boolean.parseBoolean(properties.getProperty("cross-dimensions-enabled", "false"));
                 applyDimensionScale = Boolean.parseBoolean(properties.getProperty("apply-dimension-scale", "true"));
                 lowQualityAudio = Boolean.parseBoolean(properties.getProperty("low-quality-audio", "true"));
+                musicEnabled = Boolean.parseBoolean(properties.getProperty("music-enabled", "true"));
+                musicPermissionLevel = Integer.parseInt(properties.getProperty("music-permission-level", "2"));
+                musicMaxConcurrentFrequencies = Integer.parseInt(properties.getProperty("music-max-concurrent-frequencies", "4"));
+                musicAllowYoutube = Boolean.parseBoolean(properties.getProperty("music-allow-youtube", "true"));
+                musicAllowDirectUrls = Boolean.parseBoolean(properties.getProperty("music-allow-direct-urls", "true"));
+                musicAllowLocalFiles = Boolean.parseBoolean(properties.getProperty("music-allow-local-files", "false"));
+                musicDefaultVolume = Integer.parseInt(properties.getProperty("music-default-volume", "100"));
+                musicRefreshReceiversIntervalTicks = Integer.parseInt(properties.getProperty("music-refresh-receivers-interval-ticks", "20"));
+                musicBlockPrivateNetworkUrls = Boolean.parseBoolean(properties.getProperty("music-block-private-network-urls", "true"));
+                musicMaxTrackDurationSeconds = Integer.parseInt(properties.getProperty("music-max-track-duration-seconds", "0"));
+                musicLoadTimeoutSeconds = Integer.parseInt(properties.getProperty("music-load-timeout-seconds", "90"));
+                musicFrameBufferDurationMillis = Integer.parseInt(properties.getProperty("music-frame-buffer-duration-millis", "3000"));
+                musicTrackStuckThresholdSeconds = Integer.parseInt(properties.getProperty("music-track-stuck-threshold-seconds", "60"));
+                musicYoutubeOauthRefreshToken = properties.getProperty("music-youtube-oauth-refresh-token", "");
+                musicYoutubeOauthSkipInitialization = Boolean.parseBoolean(properties.getProperty("music-youtube-oauth-skip-initialization", "true"));
 
                 createConfig(mapConfig());
 
@@ -85,6 +115,22 @@ public class ModConfig {
         config.put("apply-dimension-scale", String.valueOf(applyDimensionScale));
         config.put("\n# Audio settings", "");
         config.put("low-quality-audio", String.valueOf(lowQualityAudio));
+        config.put("\n# Server-side music settings", "");
+        config.put("music-enabled", String.valueOf(musicEnabled));
+        config.put("music-permission-level", String.valueOf(musicPermissionLevel));
+        config.put("music-max-concurrent-frequencies", String.valueOf(musicMaxConcurrentFrequencies));
+        config.put("music-allow-youtube", String.valueOf(musicAllowYoutube));
+        config.put("music-allow-direct-urls", String.valueOf(musicAllowDirectUrls));
+        config.put("music-allow-local-files", String.valueOf(musicAllowLocalFiles));
+        config.put("music-default-volume", String.valueOf(musicDefaultVolume));
+        config.put("music-refresh-receivers-interval-ticks", String.valueOf(musicRefreshReceiversIntervalTicks));
+        config.put("music-block-private-network-urls", String.valueOf(musicBlockPrivateNetworkUrls));
+        config.put("music-max-track-duration-seconds", String.valueOf(musicMaxTrackDurationSeconds));
+        config.put("music-load-timeout-seconds", String.valueOf(musicLoadTimeoutSeconds));
+        config.put("music-frame-buffer-duration-millis", String.valueOf(musicFrameBufferDurationMillis));
+        config.put("music-track-stuck-threshold-seconds", String.valueOf(musicTrackStuckThresholdSeconds));
+        config.put("music-youtube-oauth-refresh-token", musicYoutubeOauthRefreshToken);
+        config.put("music-youtube-oauth-skip-initialization", String.valueOf(musicYoutubeOauthSkipInitialization));
 
         return config;
     }

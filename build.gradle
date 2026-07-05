@@ -63,6 +63,8 @@ allprojects {
         // for more information about repositories.
 
         maven { url = 'https://maven.maxhenkel.de/repository/public' }
+        mavenCentral()
+        maven { url = 'https://maven.lavalink.dev/releases' }
 
         exclusiveContent {
             forRepository {

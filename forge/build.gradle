@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "com.matthewprenger.cursegradle" version "1.4.0"
     id "com.modrinth.minotaur" version "2.+"
 }
@@ -8,7 +8,17 @@ architectury {
     forge()
 }
 
+def youtubeSourceForgeRuntimeJar = tasks.register("youtubeSourceForgeRuntimeJar", Jar) {
+    archiveFileName.set("youtube-source-forge-runtime-1.18.1.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("runtime-libs"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.youtubeSourceForgeRuntime.collect { zipTree(it) }
+    }
+}
+
 tasks.named('runClient', JavaExec).configure {
+    dependsOn youtubeSourceForgeRuntimeJar
     doFirst {
         def envUsername = System.getenv("MC_USERNAME")
         if (envUsername && !args.contains("--username")) {
@@ -20,6 +30,7 @@ tasks.named('runClient', JavaExec).configure {
 configurations {
     common
     shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+    youtubeSourceForgeRuntime
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
     developmentForge.extendsFrom common
@@ -32,6 +43,21 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+    shadowCommon "dev.arbjerg:lavaplayer:2.2.7"
+    shadowCommon "dev.lavalink.youtube:v2:1.18.1"
+    shadowCommon "dev.lavalink.youtube:common:1.18.1"
+    shadowCommon "com.grack:nanojson:1.7"
+    shadowCommon "org.mozilla:rhino-engine:1.7.15"
+    shadowCommon "org.mozilla:rhino:1.7.15"
+    implementation "dev.arbjerg:lavaplayer:2.2.7"
+    implementation "dev.lavalink.youtube:v2:1.18.1"
+    implementation "dev.lavalink.youtube:common:1.18.1"
+    forgeRuntimeLibrary "dev.arbjerg:lavaplayer:2.2.7"
+    forgeRuntimeLibrary "dev.arbjerg:lavaplayer-natives:2.2.7"
+    forgeRuntimeLibrary files(youtubeSourceForgeRuntimeJar.flatMap { it.archiveFile })
+    youtubeSourceForgeRuntime("dev.lavalink.youtube:v2:1.18.1") { transitive = false }
+    youtubeSourceForgeRuntime("dev.lavalink.youtube:common:1.18.1") { transitive = false }
+    youtubeSourceForgeRuntime "com.grack:nanojson:1.7"
 
     // SimpleVoiceChat dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:forge-${voicechat_version}"
@@ -41,6 +67,8 @@ shadowJar {
     exclude "fabric.mod.json"
 
     configurations = [project.configurations.shadowCommon]
+    relocate "com.sedmelluq.discord.lavaplayer", "fr.flaton.walkietalkie.shadow.lavaplayer"
+    relocate "dev.lavalink.youtube", "fr.flaton.walkietalkie.shadow.youtube"
     archiveClassifier.set("dev-shadow")
 }
 

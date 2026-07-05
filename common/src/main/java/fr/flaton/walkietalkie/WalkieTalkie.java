@@ -4,8 +4,11 @@ import fr.flaton.walkietalkie.block.ModBlocks;
 import fr.flaton.walkietalkie.block.entity.ModBlockEntities;
 import fr.flaton.walkietalkie.item.ModItemGroup;
 import fr.flaton.walkietalkie.item.ModItems;
+import fr.flaton.walkietalkie.music.MusicCommand;
+import fr.flaton.walkietalkie.music.MusicLifecycle;
 import fr.flaton.walkietalkie.network.ModMessages;
 import fr.flaton.walkietalkie.screen.ModScreenHandlers;
+import dev.architectury.event.events.common.LifecycleEvent;
 
 public class WalkieTalkie {
 
@@ -20,5 +23,7 @@ public class WalkieTalkie {
 		ModMessages.registerC2SPackets();
 
 		ModSoundEvents.register();
+		MusicCommand.register();
+		LifecycleEvent.SERVER_STOPPING.register(server -> MusicLifecycle.stopAllSafely());
 	}
 }
