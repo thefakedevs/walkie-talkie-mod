@@ -75,6 +75,7 @@ shadowJar {
     relocate "commons-io", "fr.flaton.walkietalkie.shadow.commonsio"
     relocate "org.apache.commons.io", "fr.flaton.walkietalkie.shadow.commonsio"
     relocate "org.apache.commons.logging", "fr.flaton.walkietalkie.shadow.commonslogging"
+    relocate "org.apache.commons.codec", "fr.flaton.walkietalkie.shadow.commonscodec"
     relocate "org.apache.http", "fr.flaton.walkietalkie.shadow.apache.http"
     relocate "org.jsoup", "fr.flaton.walkietalkie.shadow.jsoup"
     relocate "org.json", "fr.flaton.walkietalkie.shadow.orgjson"
