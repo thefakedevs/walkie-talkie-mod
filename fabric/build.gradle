@@ -40,6 +40,8 @@ dependencies {
 }
 
 shadowJar {
+    exclude "org/slf4j/**"
+
     configurations = [project.configurations.shadowCommon]
     relocate "com.sedmelluq.discord.lavaplayer", "fr.flaton.walkietalkie.shadow.lavaplayer"
     relocate "dev.lavalink.youtube", "fr.flaton.walkietalkie.shadow.youtube"
